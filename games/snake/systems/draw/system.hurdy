@@ -1,0 +1,27 @@
+-- draw: the state is grid cells; the objects are pixels. One entity per
+-- body cell under /entities/snake (spawned and removed as the snake
+-- changes: /entities is never saved), plus the food and the board's frame.
+return function(w, dt) {
+  var s, r = w:node("/data/state").c, w:node("/data/rules").c
+  var c = r.cell
+  var ox, oy = (1 - r.cols) * c / 2, (1 - r.rows) * c / 2
+  var function at(x, y) return { x = ox + x * c, y = oy + y * c }
+
+  for i, b in ipairs(s.body) {
+    var path = "/entities/snake/" .. i
+    var n = w:node(path) or w:spawn(path, {
+      rect = { w = c - 2, h = c - 2, fill = true },
+      color = i == 1 and { 255, 230, 120 } or { 120, 220, 140 }   -- 1 is the head
+    })
+    n.c.xform = at(b.x, b.y)
+  }
+  var i = #s.body + 1                              -- shorter now: drop the rest
+  while w:node("/entities/snake/" .. i) {
+    w:remove("/entities/snake/" .. i)
+    i += 1
+  }
+
+  w:node("/objects/food").c.xform = at(s.food.x, s.food.y)
+  var board = w:node("/objects/board").c.rect
+  board.w, board.h = r.cols * c + 4, r.rows * c + 4
+}

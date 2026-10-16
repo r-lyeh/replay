@@ -1,0 +1,243 @@
+-- snake.hurdy
+-- Snake in ONE file, and the whole file is hurdy: this script builds the
+-- world and returns it; the systems below are hurdy code leaves.
+--   edit.exe games\snake.hurdy
+--
+-- games\snake\ is the same game as a FOLDER: each component is a file
+-- (data/state/score.lua), each system a .hurdy file (systems/step/system.hurdy).
+--
+--   one file (this)                            folder (games\snake\)
+--   w:spawn("/data/rules", { cell = 20 })      data/rules/cell.lua
+--   var step = ecs.system(function() {         systems/step/system.hurdy
+--   w:spawn("/systems", { order = { ... } })   systems/order.lua
+--
+-- The tree: /data rules and state, /objects what you see (saved), /systems
+-- the code (run in /systems' order), /entities the snake's body cells
+-- (spawned while playing, never saved: Stop clears them).
+--
+-- Save writes your edits next to it, in snake.overrides.lua.
+-- Press play: arrows / WASD turn; after a game over a new one starts in
+-- restart_after seconds (space skips the countdown).
+
+var ecs = require("ecs")
+var w = ecs.world()
+
+-- rules: tuning --------------------------------------------------------------
+w:spawn("/data/rules", {
+  cell          = 20,
+  cols          = 24,
+  rows          = 18,
+  step          = 0.14,
+  speedup       = 0.97,
+  start         = 4,
+  restart_after = 5
+})
+
+-- state: the game as data (saves, rewinds and replicates) -------------------
+w:spawn("/data/state", {
+  body          = {},
+  dir           = { x = 1, y = 0 },
+  want          = { x = 1, y = 0 },
+  food          = { x = 18, y = 9 },
+  score         = 0,
+  best          = 0,
+  over          = false,
+  timeout       = 0,
+  timer         = 0,
+  seed          = 20261002
+})
+
+-- objects: what you see; /entities/snake/1..N, the body, are spawned by draw
+w:spawn("/objects/board", { color = { 70, 76, 100 }, rect = { h = 364, w = 484 } })
+w:spawn("/objects/food", {
+  xform = { x = 130, y = 10 },
+  color = { 255, 90, 90 },
+  rect = { fill = true, h = 14, w = 14 }
+})
+w:spawn("/objects/hud/banner", {
+  xform = { x = 0, y = -70 },
+  color = { 255, 230, 120 },
+  text = { "", size = 2 },
+  hidden = true
+})
+w:spawn("/objects/hud/help", {
+  xform = { x = -244, y = 196 },
+  color = { 90, 96, 120 },
+  text = "arrows / WASD turn, space skips the countdown. Systems are in hurdy!"
+})
+w:spawn("/objects/hud/score", {
+  xform = { x = -242, y = -212 },
+  color = { 200, 205, 220 },
+  text = { "score 0   best 0", size = 2 }
+})
+
+-- systems -------------------------------------------------------------------
+-- Each one is real hurdy code: ecs.system() keeps the body of the function
+-- as a code leaf (it saves, rewinds and hot-swaps like any other component).
+-- The body runs on its own: it can't use locals from outside it.
+-- In the folder version each body is a file: systems/<name>/system.hurdy
+
+var input = ecs.system(function() {
+  -- input: arrow keys or WASD turn the snake (never straight back into
+  -- itself). After a game over, space or enter skips the countdown
+  -- (timeout = 0: step starts the next game).
+  -- This file is hurdy: braces instead of then/do/end, `var` for locals,
+  -- `!` for not, `!=` for ~=, and += -= *= ... It compiles to Lua on load.
+  var dirs = {
+    up = { x = 0, y = -1 }, w = { x = 0, y = -1 },
+    down = { x = 0, y = 1 }, s = { x = 0, y = 1 },
+    left = { x = -1, y = 0 }, a = { x = -1, y = 0 },
+    right = { x = 1, y = 0 }, d = { x = 1, y = 0 },
+    ["pad dpup"] = { x = 0, y = -1 }, ["pad up"] = { x = 0, y = -1 },   -- a gamepad: dpad / left stick
+    ["pad dpdown"] = { x = 0, y = 1 }, ["pad down"] = { x = 0, y = 1 },
+    ["pad dpleft"] = { x = -1, y = 0 }, ["pad left"] = { x = -1, y = 0 },
+    ["pad dpright"] = { x = 1, y = 0 }, ["pad right"] = { x = 1, y = 0 }
+  }
+
+  return {
+    on_key = function(w, key, down) {
+      if !down { return }
+      var s = w:node("/data/state").c
+      if s.over {
+        if key == "space" or key == "return" or key == "pad a" or key == "pad start" { s.timeout = 0 }
+        return
+      }
+      var d = dirs[key]
+      -- compare with the direction we are moving in, not the last key:
+      -- two quick presses can't fold the snake onto itself
+      if d and (d.x != -s.dir.x or d.y != -s.dir.y) {
+        s.want = { x = d.x, y = d.y }
+      }
+    }
+  }
+})
+
+var step = ecs.system(function() {
+  -- step: every rules.step seconds the snake moves one cell, a bit faster
+  -- after each bite. Food makes it grow; a wall or its own body ends the game,
+  -- and a new one starts after rules.restart_after seconds (state.timeout
+  -- counts down; space sets it to 0).
+  -- Randomness comes from state.seed (a tiny generator), so it is world data:
+  -- the timeline rewinds and replays it exactly.
+
+  var function rand(s, n) {
+    s.seed = (s.seed * 16807) % 2147483647           -- Park-Miller
+    return s.seed % n
+  }
+
+  var function place_food(s, r) {
+    for tries = 1, 500 {                             -- a free cell; the board is mostly empty
+      var x, y = rand(s, r.cols), rand(s, r.rows)
+      var free = true
+      for _, b in ipairs(s.body) {
+        if b.x == x and b.y == y {
+          free = false
+          break
+        }
+      }
+      if free {
+        s.food = { x = x, y = y }
+        return
+      }
+    }
+  }
+
+  var function reset(s, r) {
+    var cx, cy = math.floor(r.cols / 2), math.floor(r.rows / 2)
+    s.body = { { x = cx - i, y = cy } for i = 0, r.start - 1 }   -- a table comprehension
+    s.dir, s.want = { x = 1, y = 0 }, { x = 1, y = 0 }
+    s.timer, s.score, s.over, s.timeout = 0, 0, false, 0
+    place_food(s, r)
+  }
+
+  return function(w, dt) {
+    var s, r = w:node("/data/state").c, w:node("/data/rules").c
+    if #s.body == 0 { reset(s, r) }
+    if s.over {                                      -- game over: count down, then play again
+      s.timeout -= dt
+      if s.timeout <= 0 { reset(s, r) }
+      return
+    }
+    s.timer += dt
+    var period = r.step * r.speedup ** s.score       -- ** is power in hurdy
+    while s.timer >= period {
+      s.timer -= period
+      s.dir = { x = s.want.x, y = s.want.y }
+      var head = s.body[1]
+      var x, y = head.x + s.dir.x, head.y + s.dir.y
+      var dead = x < 0 or y < 0 or x >= r.cols or y >= r.rows
+      for i = 1, #s.body - 1 {                       -- the last cell moves away this step
+        if s.body[i].x == x and s.body[i].y == y { dead = true }
+      }
+      if dead {
+        s.over = true
+        s.timeout = r.restart_after
+        s.best = math.max(s.best or 0, s.score)
+        dd.log("snake: game over, score " .. s.score)
+        return
+      }
+      table.insert(s.body, 1, { x = x, y = y })
+      if x == s.food.x and y == s.food.y {
+        s.score += 1
+        place_food(s, r)
+      } else {
+        table.remove(s.body)
+      }
+    }
+  }
+})
+
+var draw = ecs.system(function() {
+  -- draw: the state is grid cells; the objects are pixels. One entity per
+  -- body cell under /entities/snake (spawned and removed as the snake
+  -- changes: /entities is never saved), plus the food and the board's frame.
+  return function(w, dt) {
+    var s, r = w:node("/data/state").c, w:node("/data/rules").c
+    var c = r.cell
+    var ox, oy = (1 - r.cols) * c / 2, (1 - r.rows) * c / 2
+    var function at(x, y) return { x = ox + x * c, y = oy + y * c }
+
+    for i, b in ipairs(s.body) {
+      var path = "/entities/snake/" .. i
+      var n = w:node(path) or w:spawn(path, {
+        rect = { w = c - 2, h = c - 2, fill = true },
+        color = i == 1 and { 255, 230, 120 } or { 120, 220, 140 }   -- 1 is the head
+      })
+      n.c.xform = at(b.x, b.y)
+    }
+    var i = #s.body + 1                              -- shorter now: drop the rest
+    while w:node("/entities/snake/" .. i) {
+      w:remove("/entities/snake/" .. i)
+      i += 1
+    }
+
+    w:node("/objects/food").c.xform = at(s.food.x, s.food.y)
+    var board = w:node("/objects/board").c.rect
+    board.w, board.h = r.cols * c + 4, r.rows * c + 4
+  }
+})
+
+var hud = ecs.system(function() {
+  -- hud: the score line, and the banner with the countdown when the game is over
+  return function(w, dt) {
+    var s = w:node("/data/state").c
+    w:node("/objects/hud/score").c.text[1] = "score " .. s.score .. "   best " .. (s.best or 0)
+
+    var b = w:node("/objects/hud/banner").c
+    b.hidden = !s.over or nil                        -- nil: shown
+    if s.over {
+      var text = "game over - new game in " .. math.ceil(s.timeout)
+      b.text[1] = text
+      b.xform.x = -#text * 8 * (b.text.size or 1) / 2  -- debug font: 8 px per char
+    }
+  }
+})
+
+-- systems: a node each; /systems' order is the run order (drag them in the tree)
+w:spawn("/systems", { order = { "input", "step", "draw", "hud" } })
+w:spawn("/systems/input", { system = input })
+w:spawn("/systems/step", { system = step })
+w:spawn("/systems/draw", { system = draw })
+w:spawn("/systems/hud", { system = hud })
+
+return w

@@ -1,0 +1,2 @@
+-- a dungeon (plugins/dungeon): its settings (plugins/dungeon/gen.lua says what each is); it makes crypt.tmap
+return { clutter = 0.04, doors = true, h = 40, loops = 0.4, room_max = 8, room_min = 3, rooms = 14, seed = 2026, theme = "crypt", tileset = "plugin:tiles.png", torches = 0.25, w = 64, output = "crypt.tmap" }

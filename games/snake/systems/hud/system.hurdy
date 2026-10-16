@@ -1,0 +1,13 @@
+-- hud: the score line, and the banner with the countdown when the game is over
+return function(w, dt) {
+  var s = w:node("/data/state").c
+  w:node("/objects/hud/score").c.text[1] = "score " .. s.score .. "   best " .. (s.best or 0)
+
+  var b = w:node("/objects/hud/banner").c
+  b.hidden = !s.over or nil                        -- nil: shown
+  if s.over {
+    var text = "game over - new game in " .. math.ceil(s.timeout)
+    b.text[1] = text
+    b.xform.x = -#text * 8 * (b.text.size or 1) / 2  -- debug font: 8 px per char
+  }
+}

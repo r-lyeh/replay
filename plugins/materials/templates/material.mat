@@ -1,0 +1,8 @@
+-- a material (plugins/materials): its nodes and the wires between them
+return {
+  links = { { from = 1, input = "albedo", out = "color", to = 2 } },
+  nodes = {
+    { data = { 0.8, 0.8, 0.8 }, id = 1, kind = "color", x = -200, y = -20 },
+    { id = 2, kind = "output", x = 0, y = -60 },
+  },
+}

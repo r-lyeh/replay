@@ -1,0 +1,32 @@
+-- input: arrow keys or WASD turn the snake (never straight back into
+-- itself). After a game over, space or enter skips the countdown
+-- (timeout = 0: step starts the next game).
+-- This file is hurdy: braces instead of then/do/end, `var` for locals,
+-- `!` for not, `!=` for ~=, and += -= *= ... It compiles to Lua on load.
+var dirs = {
+  up = { x = 0, y = -1 }, w = { x = 0, y = -1 },
+  down = { x = 0, y = 1 }, s = { x = 0, y = 1 },
+  left = { x = -1, y = 0 }, a = { x = -1, y = 0 },
+  right = { x = 1, y = 0 }, d = { x = 1, y = 0 },
+  ["pad dpup"] = { x = 0, y = -1 }, ["pad up"] = { x = 0, y = -1 },   -- a gamepad: dpad / left stick
+  ["pad dpdown"] = { x = 0, y = 1 }, ["pad down"] = { x = 0, y = 1 },
+  ["pad dpleft"] = { x = -1, y = 0 }, ["pad left"] = { x = -1, y = 0 },
+  ["pad dpright"] = { x = 1, y = 0 }, ["pad right"] = { x = 1, y = 0 }
+}
+
+return {
+  on_key = function(w, key, down) {
+    if !down { return }
+    var s = w:node("/data/state").c
+    if s.over {
+      if key == "space" or key == "return" or key == "pad a" or key == "pad start" { s.timeout = 0 }
+      return
+    }
+    var d = dirs[key]
+    -- compare with the direction we are moving in, not the last key:
+    -- two quick presses can't fold the snake onto itself
+    if d and (d.x != -s.dir.x or d.y != -s.dir.y) {
+      s.want = { x = d.x, y = d.y }
+    }
+  }
+}

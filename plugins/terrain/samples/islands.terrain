@@ -1,0 +1,19 @@
+-- a terrain (plugins/terrain): its settings (plugins/terrain/gen.lua says what each is); it makes islands.tmap
+return {
+  beach = 0.04,
+  dry = 0.2,
+  flowers = 0.05,
+  h = 64,
+  hills = 0.72,
+  island = true,
+  octaves = 5,
+  output = "islands.tmap",
+  scale = 20,
+  seed = 7,
+  shores = true,
+  snow = 0.86,
+  tileset = "plugin:tiles.png",
+  trees = 0.35,
+  w = 96,
+  water = 0.38,
+}

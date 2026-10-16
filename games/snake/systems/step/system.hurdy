@@ -1,0 +1,72 @@
+-- step: every rules.step seconds the snake moves one cell, a bit faster
+-- after each bite. Food makes it grow; a wall or its own body ends the game,
+-- and a new one starts after rules.restart_after seconds (state.timeout
+-- counts down; space sets it to 0).
+-- Randomness comes from state.seed (a tiny generator), so it is world data:
+-- the timeline rewinds and replays it exactly.
+
+var function rand(s, n) {
+  s.seed = (s.seed * 16807) % 2147483647           -- Park-Miller
+  return s.seed % n
+}
+
+var function place_food(s, r) {
+  for tries = 1, 500 {                             -- a free cell; the board is mostly empty
+    var x, y = rand(s, r.cols), rand(s, r.rows)
+    var free = true
+    for _, b in ipairs(s.body) {
+      if b.x == x and b.y == y {
+        free = false
+        break
+      }
+    }
+    if free {
+      s.food = { x = x, y = y }
+      return
+    }
+  }
+}
+
+var function reset(s, r) {
+  var cx, cy = math.floor(r.cols / 2), math.floor(r.rows / 2)
+  s.body = { { x = cx - i, y = cy } for i = 0, r.start - 1 }   -- a table comprehension
+  s.dir, s.want = { x = 1, y = 0 }, { x = 1, y = 0 }
+  s.timer, s.score, s.over, s.timeout = 0, 0, false, 0
+  place_food(s, r)
+}
+
+return function(w, dt) {
+  var s, r = w:node("/data/state").c, w:node("/data/rules").c
+  if #s.body == 0 { reset(s, r) }
+  if s.over {                                      -- game over: count down, then play again
+    s.timeout -= dt
+    if s.timeout <= 0 { reset(s, r) }
+    return
+  }
+  s.timer += dt
+  var period = r.step * r.speedup ** s.score       -- ** is power in hurdy
+  while s.timer >= period {
+    s.timer -= period
+    s.dir = { x = s.want.x, y = s.want.y }
+    var head = s.body[1]
+    var x, y = head.x + s.dir.x, head.y + s.dir.y
+    var dead = x < 0 or y < 0 or x >= r.cols or y >= r.rows
+    for i = 1, #s.body - 1 {                       -- the last cell moves away this step
+      if s.body[i].x == x and s.body[i].y == y { dead = true }
+    }
+    if dead {
+      s.over = true
+      s.timeout = r.restart_after
+      s.best = math.max(s.best or 0, s.score)
+      dd.log("snake: game over, score " .. s.score)
+      return
+    }
+    table.insert(s.body, 1, { x = x, y = y })
+    if x == s.food.x and y == s.food.y {
+      s.score += 1
+      place_food(s, r)
+    } else {
+      table.remove(s.body)
+    }
+  }
+}

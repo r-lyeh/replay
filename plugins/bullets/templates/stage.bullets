@@ -1,0 +1,22 @@
+-- bullet patterns, ships, waves and a boss (plugins/bullets; runtime/bullets.lua says what each field is)
+return {
+  patterns = {
+    { name = "aimed", kind = "fan", count = 3, spread = 30, aim = true, speed = 170, rate = 0.8, delay = 0.6, size = 11, color = "#ff7ab0" },
+    { name = "spiral", kind = "ring", count = 4, spin = 90, speed = 150, rate = 8, size = 10, color = "#ffb25a" },
+    { name = "ring", kind = "ring", count = 20, speed = 110, rate = 0.8, size = 12, color = "#c58bff" },
+  },
+  enemies = {
+    { name = "fighter", hp = 3, score = 100, size = 40, speed = 140, pattern = "aimed" },
+  },
+  waves = {
+    { at = 1, enemy = "fighter", count = 5, gap = 0.4, path = "dive", x = -200 },
+    { at = 5, enemy = "fighter", count = 5, gap = 0.4, path = "dive", x = 200 },
+  },
+  boss = {
+    hp = 300, size = 150, score = 5000,
+    phases = {
+      { hp = 1, patterns = { "spiral" } },
+      { hp = 0.5, patterns = { "ring", "aimed" } },
+    },
+  },
+}

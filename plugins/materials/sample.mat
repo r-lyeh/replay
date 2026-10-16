@@ -1,0 +1,19 @@
+-- a material (plugins/materials): its nodes and the wires between them
+return {
+  links = {
+    { from = 1, input = "uv", out = "uv", to = 2 },
+    { from = 2, input = "a", out = "color", to = 4 },
+    { from = 3, input = "b", out = "color", to = 4 },
+    { from = 4, input = "albedo", out = "color", to = 6 },
+    { from = 5, input = "roughness", out = "value", to = 6 },
+    { from = 2, input = "alpha", out = "alpha", to = 6 },
+  },
+  nodes = {
+    { id = 1, kind = "uv", x = -380, y = -60 },
+    { data = { image = "sample.png" }, id = 2, kind = "texture", x = -200, y = -90 },
+    { data = { 0.95, 0.55, 0.2 }, id = 3, kind = "color", x = -200, y = 40 },
+    { id = 4, kind = "multiply", x = 10, y = -60 },
+    { data = { value = 0.35 }, id = 5, kind = "number", x = 10, y = 60 },
+    { id = 6, kind = "output", x = 220, y = -80 },
+  },
+}

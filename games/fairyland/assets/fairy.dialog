@@ -1,0 +1,20 @@
+0 Hi! Welcome to Fairyland! Is this your first visit? [1,2]
+1 Yes, I just arrived -> 3
+2 No, I've been here before -> 4
+3 Awesome! Have fun! -> 5
+4 Hey, welcome back -> 5
+---
+5 Do you want to be my friend? [6,7,8,9]
+6 Yes -> 10
+7 Never -> 11
+8 Maybe -> 12
+9 Not sure -> 12
+10 Great! :grin: -> 14
+11 Awwww -> 13
+12 Please! -> 5
+---
+13 Oh hi -> 13
+14 Hello friend! Did you hear about that #monster in the forest?
+
+#monster It is said it appears to wanderers at midnight. {...} Scary! :fear: // contextual dialog if player has knowledge about #monster
+#bananas I once landed in an island full of bananas... {wait 2} Got sick of them! :angry: // new dialog if player is carrying or gifting a #bananas item. or if player heard about #bananas before

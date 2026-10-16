@@ -1,0 +1,16 @@
+-- a dungeon (plugins/dungeon): its settings (plugins/dungeon/gen.lua says what each is); it makes a .tmap beside it
+return {
+  auto_walls = true,
+  clutter = 0.08,
+  doors = true,
+  h = 32,
+  loops = 0.25,
+  room_max = 9,
+  room_min = 4,
+  rooms = 9,
+  seed = 1,
+  theme = "stone",
+  tileset = "plugin:tiles.png",
+  torches = 0.12,
+  w = 48,
+}

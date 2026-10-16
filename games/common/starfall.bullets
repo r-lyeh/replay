@@ -1,0 +1,43 @@
+-- bullet patterns, ships, waves and a boss (plugins/bullets; runtime/bullets.lua says what each field is)
+return {
+  patterns = {
+    { name = "aim1", kind = "fan", count = 1, aim = true, speed = 190, rate = 0.8, delay = 0.7, size = 11, color = "#ff6aa0" },
+    { name = "fan3", kind = "fan", count = 3, spread = 36, aim = true, speed = 170, rate = 0.7, delay = 0.8, size = 11, color = "#ff7ab0" },
+    { name = "ring8", kind = "ring", count = 8, speed = 120, rate = 0.55, delay = 0.6, size = 12, color = "#c58bff" },
+    { name = "spin4", kind = "ring", count = 4, spin = 95, speed = 150, rate = 6, delay = 0.5, size = 11, color = "#ffb25a" },
+    { name = "boss_spiral", kind = "ring", count = 5, spin = 70, speed = 140, rate = 9, size = 11, color = "#ff9b4a" },
+    { name = "boss_aimed", kind = "fan", count = 7, spread = 50, aim = true, speed = 135, rate = 1.1, delay = 1.5, size = 13, color = "#ffd24a" },
+    { name = "boss_ring", kind = "ring", count = 24, speed = 100, accel = 25, rate = 0.9, size = 12, color = "#ff5a8a" },
+    { name = "boss_bloom", kind = "random", count = 3, spread = 150, speed = 150, accel = -90, rate = 1.1, delay = 0.8, size = 14, color = "#9cff8a",
+      split = { at = 1.3, pattern = "bloom_burst" } },
+    { name = "bloom_burst", kind = "ring", count = 10, speed = 95, volleys = 1, size = 11, color = "#9cff8a" },
+    { name = "boss_curve", kind = "ring", count = 12, curve = 38, speed = 120, rate = 0.75, size = 11, color = "#7ad0ff" },
+    { name = "boss_curve_r", kind = "ring", count = 12, curve = -38, speed = 120, rate = 0.75, delay = 0.37, size = 11, color = "#7ad0ff" },
+  },
+  enemies = {
+    { name = "fighter", hp = 3, score = 100, size = 40, speed = 150, pattern = "aim1" },
+    { name = "gunner", hp = 6, score = 250, size = 48, speed = 90, pattern = "fan3" },
+    { name = "orb", hp = 8, score = 300, size = 46, speed = 85, pattern = "ring8" },
+    { name = "spinner", hp = 14, score = 500, size = 56, speed = 55, pattern = "spin4" },
+  },
+  waves = {
+    { at = 2, enemy = "fighter", count = 5, gap = 0.35, path = "dive", x = -220 },
+    { at = 6, enemy = "fighter", count = 5, gap = 0.35, path = "dive", x = 220 },
+    { at = 10, enemy = "gunner", count = 3, gap = 0, spacing = 160, path = "down", x = -160 },
+    { at = 14, enemy = "fighter", count = 8, gap = 0.3, path = "sine", x = 0 },
+    { at = 19, enemy = "orb", count = 2, gap = 0, path = "arc", x = -260, mirror = true },
+    { at = 24, enemy = "fighter", count = 6, gap = 0.3, path = "sweep", x = -1, y = -190 },
+    { at = 25.5, enemy = "fighter", count = 6, gap = 0.3, path = "sweep", x = 1, y = -120 },
+    { at = 30, enemy = "spinner", count = 1, path = "down", x = 0 },
+    { at = 31, enemy = "gunner", count = 2, gap = 0, path = "zigzag", x = -220, mirror = true },
+    { at = 38, enemy = "fighter", count = 10, gap = 0.25, path = "dive", x = -200, mirror = true },
+  },
+  boss = {
+    hp = 420, size = 150, score = 5000,
+    phases = {
+      { hp = 1, patterns = { "boss_spiral", "boss_aimed" } },
+      { hp = 0.66, patterns = { "boss_ring", "boss_bloom" } },
+      { hp = 0.33, patterns = { "boss_curve", "boss_curve_r", "boss_spiral" } },
+    },
+  },
+}

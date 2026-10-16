@@ -1,0 +1,9 @@
+tiles.png (and tiles.lua, its names) - the tilemap editor's tileset.
+
+Made for Replay by tools/make_tiles.py (pixel art drawn by code: noise and
+patterns), not taken from any game or tileset.
+
+CC0 1.0 Universal: to the extent possible under law, the authors have waived
+all copyright and related or neighboring rights to this work. You can copy,
+modify, distribute and use it, even commercially, without asking permission.
+https://creativecommons.org/publicdomain/zero/1.0/
